@@ -36,6 +36,7 @@ REGRAS_DESEMPATE: list[str] = [
     "Chegou só parte do pedido: produto_errado.",
     "Atrasou e veio com defeito: defeito_qualidade.",
     "Qualidade diferente do anúncio (material, acabamento): defeito_qualidade; outro modelo, cor ou tamanho: produto_errado.",
+    "Produto falsificado ou réplica vendido como original: produto_errado.",
 ]
 
 

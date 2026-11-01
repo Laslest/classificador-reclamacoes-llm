@@ -23,6 +23,7 @@ As regras 1 a 4 também estão em `src/reclamacoes/categorias.py` (`REGRAS_DESEM
 3. **Atraso + defeito** ("demorou e veio quebrado") → `defeito_qualidade`. O defeito é mais grave e exige ação.
 4. **Diferente do anúncio** na qualidade ("material parece frágil, não é o da foto") → `defeito_qualidade`; produto de outro modelo/cor → `produto_errado`.
 5. Na dúvida real entre duas categorias, anote o id em `docs/casos_dificeis.md`. Esses casos entram na análise de erros.
+6. **Produto falsificado/réplica** vendido como original → produto_errado.
 
 ## Concordância (opcional, mas valoriza o projeto)
 
