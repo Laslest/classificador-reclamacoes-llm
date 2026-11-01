@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+# CSV original completo da Olist (grande): baixe do Kaggle, não versione
+data/olist_*.csv
+TAREFAS.md
