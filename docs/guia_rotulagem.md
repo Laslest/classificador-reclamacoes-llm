@@ -16,14 +16,20 @@ Use **descartar** (`d`) para textos que não são reclamação (ex.: elogio com 
 
 ## Regras de desempate
 
-As regras 1 a 4 também estão em `src/reclamacoes/categorias.py` (`REGRAS_DESEMPATE`) e vão no prompt. Se mudar aqui, mude lá.
+As regras 1 a 9 também estão em `src/reclamacoes/categorias.py` (`REGRAS_DESEMPATE`) e vão no prompt. Se mudar aqui, mude lá.
 
-1. **Não recebido + atendimento** ("não chegou e a loja não responde") → `nao_recebido`. O problema de origem é a entrega.
-2. **Faltou parte do pedido** ("chegou só 1 de 2 itens") → `produto_errado`.
-3. **Atraso + defeito** ("demorou e veio quebrado") → `defeito_qualidade`. O defeito é mais grave e exige ação.
-4. **Diferente do anúncio** na qualidade ("material parece frágil, não é o da foto") → `defeito_qualidade`; produto de outro modelo/cor → `produto_errado`.
-5. Na dúvida real entre duas categorias, anote o id em `docs/casos_dificeis.md`. Esses casos entram na análise de erros.
-6. **Produto falsificado/réplica** vendido como original → produto_errado.
+1. **Não recebeu + loja não responde/resolve** → `nao_recebido`. **Exceção:** se o pedido foi cancelado ou a loja avisou que não tem o produto (venda sem estoque) e o cliente não espera mais a entrega → `atendimento`.
+2. **Faltou um item do pedido** ("comprei 2, veio 1"; kit com unidades faltando) → `produto_errado`.
+3. **Atraso + defeito** → `defeito_qualidade`.
+4. **Diferente do anúncio:** material/acabamento/qualidade → `defeito_qualidade`; outro modelo, cor ou tamanho → `produto_errado`.
+5. **Dúvida real** → anotar em `docs/casos_dificeis.md`.
+6. **Produto falsificado/réplica** vendido como original → `produto_errado`.
+7. **Demora ou prazo descumprido sem dizer se recebeu** → `atraso`. Só é `nao_recebido` se o cliente disser que não chegou.
+8. **Faltam peças/partes dentro de um produto** (brinquedo sem adesivos, cadeira sem borrachinhas) → `defeito_qualidade`.
+9. **Produto com problema + loja não resolve a troca/devolução** → a categoria do problema do produto. `atendimento` é só quando a queixa é apenas a loja.
+10. **Tempo verbal do atraso:** "a entrega está atrasada" (presente, ainda esperando) → `nao_recebido`; "a entrega atrasou" (passado, sem dizer se chegou) → `atraso`.
+11. **Venda sem estoque:** se a loja avisou ou cancelou → `atendimento`; se não avisou e o cliente continua sem o produto → `nao_recebido`. Produto incompatível com o modelo informado → `produto_errado`.
+Também são `outro`: frete, embalagem, nota fiscal, pagamento, ter que retirar no correio. Texto sem motivo escrito ("quero devolver", "quero meu dinheiro de volta") → `outro`. Não é reclamação → descartar.
 
 ## Concordância (opcional, mas valoriza o projeto)
 

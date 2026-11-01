@@ -32,11 +32,17 @@ DEFINICOES: dict[Categoria, str] = {
 # Regras de desempate: as mesmas do guia de rotulagem, para o LLM ser cobrado
 # só pelas regras que ele recebeu.
 REGRAS_DESEMPATE: list[str] = [
-    "Não recebeu e a loja não responde: nao_recebido (o problema de origem é a entrega).",
-    "Chegou só parte do pedido: produto_errado.",
+    "Não recebeu e a loja não responde: nao_recebido. Exceção: se o pedido foi cancelado ou a loja avisou que não tem o produto e o cliente não espera mais a entrega: atendimento.",
+    "Faltou um item do pedido (comprou 2, veio 1; kit com unidades faltando): produto_errado.",
     "Atrasou e veio com defeito: defeito_qualidade.",
-    "Qualidade diferente do anúncio (material, acabamento): defeito_qualidade; outro modelo, cor ou tamanho: produto_errado.",
+    "Qualidade, material ou acabamento diferente do anúncio: defeito_qualidade; outro modelo, cor ou tamanho: produto_errado.",
     "Produto falsificado ou réplica vendido como original: produto_errado.",
+    "Reclama de demora ou prazo descumprido sem dizer se recebeu: atraso. Só é nao_recebido se disser que não chegou.",
+    "Faltam peças dentro de um produto: defeito_qualidade.",
+    "Produto com problema e a loja não resolve a troca: use a categoria do problema do produto. atendimento só quando a queixa é apenas sobre a loja.",
+    "Frete, embalagem, nota fiscal, pagamento ou ter que retirar no correio: outro. Texto sem motivo explícito: outro.",
+    "Entrega está atrasada (presente, ainda esperando): nao_recebido; atrasou (passado, sem dizer se chegou): atraso.",
+    "Venda sem estoque: se a loja avisou ou cancelou, atendimento; se não avisou e o cliente segue sem o produto, nao_recebido. Produto incompatível com o modelo informado: produto_errado.",
 ]
 
 
