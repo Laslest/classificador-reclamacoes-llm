@@ -25,7 +25,7 @@ from pydantic import ValidationError
 
 from reclamacoes.categorias import DEFINICOES, REGRAS_DESEMPATE, Classificacao
 
-MODELO_PADRAO = "gemini-2.5-flash"
+MODELO_PADRAO = "gemini-3.5-flash"
 
 
 def montar_instrucoes() -> str:
