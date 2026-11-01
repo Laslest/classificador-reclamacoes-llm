@@ -29,8 +29,8 @@ def main() -> None:
         print(f"  {numero} = {cat.value:<18} {DEFINICOES[cat]}")
     print("  d = descartar (texto não é reclamação)   q = sair\n")
 
-    for i in pendentes:
-        print("-" * 70)
+    for n, i in enumerate(pendentes, start=1):
+        print("-" * 70, f"[{n}/{len(pendentes)}]")
         print(df.at[i, "texto"])
         while True:
             resposta = input("> ").strip().lower()
