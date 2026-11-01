@@ -70,4 +70,4 @@ Os dados são do Brazilian E-Commerce Public Dataset by Olist, publicado no Kagg
 
 ## Uso de IA no desenvolvimento
 
-> _Escreva com as suas palavras, com detalhes concretos: em que partes você usou IA (qual ferramenta, para quê) e o que você fez sozinho (decisões, rotulagem/perguntas, experimentos, análise). Não copie de outro projeto._
+Usei Claude e Claude Code como apoio para estruturar o projeto e escrever partes do código. A definição das categorias e das regras de desempate e a rotulagem manual das 500 avaliações foram feitas por mim. *(Seção será completada ao final do projeto.)*
