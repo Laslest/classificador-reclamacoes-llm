@@ -48,3 +48,14 @@ def test_resposta_invalida_conta_como_erro():
     assert m["acuracia"] == pytest.approx(0.5)
     assert m["invalidas_pct"] == pytest.approx(25.0)
     assert m["tokens_medios"] == pytest.approx(15.0)
+
+
+def test_previsoes_duplicadas_ou_faltando_geram_erro():
+    teste = pd.DataFrame({"id": ["1", "2"], "texto": "x", "rotulo": ["atraso", "outro"]})
+    base = {"justificativa": None, "latencia_s": 1.0, "tokens_entrada": 1, "tokens_saida": 1}
+    duplicada = pd.DataFrame([{"id": "1", "previsto": "atraso", **base}] * 2)
+    with pytest.raises(ValueError, match="repetidos"):
+        calcular_metricas(teste, duplicada)
+    faltando = pd.DataFrame([{"id": "1", "previsto": "atraso", **base}])
+    with pytest.raises(ValueError, match="sem previsão"):
+        calcular_metricas(teste, faltando)

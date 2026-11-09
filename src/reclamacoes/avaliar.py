@@ -28,6 +28,14 @@ def carregar_predicoes(caminho: Path) -> pd.DataFrame:
 
 def calcular_metricas(teste: pd.DataFrame, pred: pd.DataFrame) -> dict:
     """Respostas inválidas (previsto = None) contam como ERRO, não são descartadas."""
+    if not pred["id"].is_unique:
+        raise ValueError("Há ids repetidos nas previsões.")
+    faltando = set(teste["id"]) - set(pred["id"])
+    if faltando:
+        raise ValueError(f"{len(faltando)} itens do teste sem previsão. Rode o classificar de novo.")
+    pred = pred.copy()
+    if "tokens_raciocinio" not in pred:
+        pred["tokens_raciocinio"] = 0    
     junto = teste[["id", "texto", "rotulo"]].merge(pred, on="id", how="left")
     previsto = junto["previsto"].fillna(SEM_RESPOSTA)
     return {
@@ -37,7 +45,8 @@ def calcular_metricas(teste: pd.DataFrame, pred: pd.DataFrame) -> dict:
         "f1_macro": f1_score(junto["rotulo"], previsto, labels=ROTULOS, average="macro", zero_division=0),
         "invalidas_pct": 100 * junto["previsto"].isna().mean(),
         "latencia_media_s": junto["latencia_s"].mean(),
-        "tokens_medios": (junto["tokens_entrada"] + junto["tokens_saida"]).mean(),
+        "tokens_medios": (junto["tokens_entrada"] + junto["tokens_saida"]
+                          + junto["tokens_raciocinio"].fillna(0)).mean(),
         "junto": junto.assign(previsto=previsto),
     }
 
