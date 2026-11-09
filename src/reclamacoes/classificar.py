@@ -28,6 +28,12 @@ from reclamacoes.categorias import DEFINICOES, REGRAS_DESEMPATE, Classificacao
 MODELO_PADRAO = "gemini-3.5-flash"
 
 
+
+
+class ErroAPI(Exception):
+    """A API falhou em todas as tentativas (limite de uso ou instabilidade).
+    Não é erro do modelo: o item não é gravado e será refeito ao rodar de novo."""
+
 def montar_instrucoes() -> str:
     linhas = [
         "Você classifica reclamações de clientes de um e-commerce brasileiro.",
@@ -73,6 +79,8 @@ class Resultado:
     tokens_entrada: int
     tokens_saida: int
     erro: str | None = None
+    tokens_raciocinio: int = 0
+    versao_modelo: str | None = None
 
 
 class ClassificadorGemini:
@@ -98,10 +106,11 @@ class ClassificadorGemini:
         from google.genai import errors
 
         prompt = montar_prompt(texto, self.exemplos)
-        invalidas, tokens_in, tokens_out, ultimo_erro = 0, 0, 0, None
-        inicio = time.perf_counter()
+        invalidas, tokens_in, tokens_out, tokens_pensando = 0, 0, 0, 0
+        ultimo_erro, latencia, versao = None, 0.0, None
 
         for tentativa in range(1, self.max_tentativas + 1):
+            inicio = time.perf_counter()
             try:
                 resposta = self.client.models.generate_content(
                     model=self.modelo, contents=prompt, config=self._config()
@@ -113,10 +122,13 @@ class ClassificadorGemini:
                 ultimo_erro = f"API {e.code}"
                 time.sleep(self.espera_base_s * 2 ** (tentativa - 1))
                 continue
+            latencia = time.perf_counter() - inicio  # só o tempo da chamada, sem as esperas
 
             uso = getattr(resposta, "usage_metadata", None)
             tokens_in += getattr(uso, "prompt_token_count", 0) or 0
             tokens_out += getattr(uso, "candidates_token_count", 0) or 0
+            tokens_pensando += getattr(uso, "thoughts_token_count", 0) or 0
+            versao = getattr(resposta, "model_version", None)
 
             try:
                 saida = Classificacao.model_validate_json(resposta.text or "")
@@ -126,10 +138,14 @@ class ClassificadorGemini:
                 continue
 
             return Resultado(id_, saida.categoria.value, saida.justificativa, tentativa,
-                             invalidas, time.perf_counter() - inicio, tokens_in, tokens_out)
+                             invalidas, latencia, tokens_in, tokens_out,
+                             tokens_raciocinio=tokens_pensando, versao_modelo=versao)
 
-        return Resultado(id_, None, None, self.max_tentativas, invalidas,
-                         time.perf_counter() - inicio, tokens_in, tokens_out, ultimo_erro)
+        if ultimo_erro and ultimo_erro.startswith("API"):
+            raise ErroAPI(ultimo_erro)
+        return Resultado(id_, None, None, self.max_tentativas, invalidas, latencia,
+                         tokens_in, tokens_out, ultimo_erro,
+                         tokens_raciocinio=tokens_pensando, versao_modelo=versao)
 
 
 def ids_ja_classificados(caminho: Path) -> set[str]:
@@ -145,6 +161,7 @@ def main() -> None:
     parser.add_argument("--teste", type=Path, default=Path("data/teste.csv"))
     parser.add_argument("--treino", type=Path, default=Path("data/treino.csv"))
     parser.add_argument("--exemplos-por-categoria", type=int, default=2)
+    parser.add_argument("--seed", type=int, default=42, help="sorteio dos exemplos do few-shot")    
     parser.add_argument("--intervalo", type=float, default=6.0,
                         help="segundos entre chamadas, para respeitar o limite do plano gratuito")
     args = parser.parse_args()
@@ -158,11 +175,12 @@ def main() -> None:
 
     exemplos = None
     if args.modo == "few-shot":
-        exemplos = escolher_exemplos(pd.read_csv(args.treino), args.exemplos_por_categoria)
+        exemplos = escolher_exemplos(pd.read_csv(args.treino), args.exemplos_por_categoria, args.seed)
 
     classificador = ClassificadorGemini(client, modelo, exemplos)
     teste = pd.read_csv(args.teste)
-    saida = Path(f"resultados/predicoes_{args.modo}.jsonl")
+    nome = args.modo if args.modo == "zero-shot" else f"few-shot-s{args.seed}"
+    saida = Path(f"resultados/predicoes_{nome}.jsonl")
     saida.parent.mkdir(exist_ok=True)
     feitos = ids_ja_classificados(saida)
 
@@ -170,7 +188,12 @@ def main() -> None:
     print(f"Modelo {modelo} | modo {args.modo} | {len(feitos)} já feitos, {len(pendentes)} pendentes")
     with saida.open("a", encoding="utf-8") as f:
         for n, (_, linha) in enumerate(pendentes.iterrows(), start=1):
-            r = classificador.classificar(linha["id"], linha["texto"])
+            try:
+                r = classificador.classificar(linha["id"], linha["texto"])
+            except ErroAPI as e:
+                print(f"[{n}/{len(pendentes)}] falha da API ({e}); fica para a próxima execução")
+                time.sleep(args.intervalo)
+                continue
             f.write(json.dumps(asdict(r), ensure_ascii=False) + "\n")
             f.flush()
             print(f"[{n}/{len(pendentes)}] {r.previsto or 'INVÁLIDO'} (real: {linha['rotulo']})")

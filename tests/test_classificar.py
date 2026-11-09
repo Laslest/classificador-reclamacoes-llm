@@ -9,6 +9,7 @@ from google.genai import errors
 from reclamacoes.categorias import Categoria
 from reclamacoes.classificar import (
     ClassificadorGemini,
+    ErroAPI,
     escolher_exemplos,
     montar_instrucoes,
     montar_prompt,
@@ -97,3 +98,10 @@ def test_few_shot_usa_so_exemplos_do_treino():
 
 def test_zero_shot_nao_tem_exemplos():
     assert "Exemplos" not in montar_prompt("texto", None)
+
+
+def test_api_falhando_em_todas_as_tentativas_nao_vira_erro_do_modelo():
+    erro_429 = errors.ClientError(429, {"error": {"message": "quota"}})
+    cliente = ClienteFalso([erro_429, erro_429, erro_429])
+    with pytest.raises(ErroAPI):
+        ClassificadorGemini(cliente, "modelo", espera_base_s=0).classificar("a1", "x")
